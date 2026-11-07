@@ -12,8 +12,15 @@ val newBuildDir: Directory =
 rootProject.layout.buildDirectory.value(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
+    // Only redirect build output for modules under this repo.
+    // Plugins live in the Pub cache (often another Windows drive); forcing their
+    // buildDir onto the project drive breaks AGP with "different roots".
+    val projectRoot = rootProject.projectDir.canonicalPath
+    val isLocalProject = project.projectDir.canonicalPath.startsWith(projectRoot)
+    if (isLocalProject) {
+        val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
+        project.layout.buildDirectory.value(newSubprojectBuildDir)
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")
