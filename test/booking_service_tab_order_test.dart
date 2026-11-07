@@ -188,7 +188,7 @@ void main() {
       expect(find.text('Grooming'), findsOneWidget);
       expect(find.text('Bathing'), findsOneWidget);
 
-      // Tapping Grooming sets it in the draft
+      // Tapping Grooming sets standalone service without clearing package
       await tester.tap(find.text('Grooming'));
       await tester.pumpAndSettle();
 
@@ -196,6 +196,99 @@ void main() {
       expect(draft.service!['name'], equals('Grooming'));
       expect(draft.service!['serviceId'], equals(193));
       expect(draft.isPackageSelected, isFalse);
+    });
+
+    testWidgets('Package, service, and add-on selections persist across tabs; Continue requires package', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      draft.setPet({
+        'id': 1,
+        'pet_name': 'Max',
+        'breed': 'Golden Retriever',
+        'weight': 'Large',
+      });
+
+      final bloc = ServiceBloc(repository: serviceRepo)..add(const InitializeServices());
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BlocProvider<ServiceBloc>.value(
+            value: bloc,
+            child: const BookingServicePageMobile(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Special Package'));
+      await tester.pumpAndSettle();
+      expect(draft.package, isNotNull);
+      expect(draft.isPackageSelected, isTrue);
+      expect(draft.package?['packageId'], equals(1));
+
+      await tester.tap(find.text('Services'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Grooming'));
+      await tester.pumpAndSettle();
+      expect(draft.service?['serviceId'], equals(193));
+      expect(draft.package, isNotNull);
+      expect(draft.isPackageSelected, isTrue);
+
+      await tester.tap(find.text('Add-Ons'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Flea Bath'));
+      await tester.pumpAndSettle();
+      expect(draft.addOns, isNotEmpty);
+      expect(draft.package, isNotNull);
+      expect(draft.service?['serviceId'], equals(193));
+
+      final ids = draft.extractServiceIds();
+      expect(ids['packageId'], equals(1));
+      expect(ids['serviceId'], equals(193));
+      expect(draft.extractAddOnIds(), isNotEmpty);
+
+      draft.clearCatalogSelections();
+      expect(draft.package, isNull);
+      expect(draft.service, isNull);
+      expect(draft.addOns, isEmpty);
+      expect(draft.isPackageSelected, isFalse);
+    });
+
+    test('extractServiceIds reads package and service from separate draft fields', () {
+      draft.setPackage({
+        'id': 1,
+        'packageId': 1,
+        'packageMasterId': 1,
+        'isPackage': true,
+        'service_name': 'Special Package',
+        'price': 80,
+      });
+      draft.setService({
+        'id': 193,
+        'serviceId': 193,
+        'serviceMasterId': 193,
+        'isPackage': false,
+        'service_name': 'Grooming',
+        'price': 75,
+      });
+      draft.toggleAddOn({
+        'id': 114,
+        'addOnId': 114,
+        'name': 'Flea Bath',
+        'price': 14,
+      });
+
+      final ids = draft.extractServiceIds();
+      expect(ids['packageId'], equals(1));
+      expect(ids['serviceId'], equals(193));
+      expect(draft.extractAddOnIds(), equals([114]));
+      expect(draft.packageSubtotal, equals(80));
+      expect(draft.serviceSubtotal, equals(75 + 14));
+      expect(draft.estimatedTotal, equals(80 + 75 + 14));
+      expect(draft.isComplete, isFalse);
     });
 
     test('ServiceRepository.liveServiceImageUrl and resolveImageUrl produce live URLs', () {

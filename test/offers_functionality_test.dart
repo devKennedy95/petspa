@@ -311,9 +311,11 @@ void main() {
       expect(bookingDraft.serviceSubtotal, 60.0);
       expect(bookingDraft.packageSubtotal, 0.0);
 
-      // Package
-      bookingDraft.setService({
+      // Package (independent of service) — clear standalone service for package+addons case
+      bookingDraft.setService(null);
+      bookingDraft.setPackage({
         'id': '100',
+        'packageId': 100,
         'isPackage': true,
         'package_name': 'Royal Spa Package',
         'price': 120.0,

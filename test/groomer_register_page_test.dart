@@ -117,7 +117,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     // Verify exact endpoint was called
-    expect(mockApi.lastPostPath, equals('/api/groomer-auth/setup-account'));
+    expect(mockApi.lastPostPath, equals('/api/auth/groomer/setup-account'));
 
     // Verify exact 5 fields in payload
     final payload = mockApi.lastPostData as Map<String, dynamic>;
@@ -203,7 +203,7 @@ void main() {
     await tester.tap(find.text('Complete Profile'));
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(mockApi.lastPostPath, equals('/api/groomer-auth/setup-account'));
+    expect(mockApi.lastPostPath, equals('/api/auth/groomer/setup-account'));
     final payload = mockApi.lastPostData as Map<String, dynamic>;
     expect(payload['tempLoginId'], equals('direct@temp.shearheaven.com'));
     expect(payload['tempPassword'], equals('DirectTempPassword@99'));

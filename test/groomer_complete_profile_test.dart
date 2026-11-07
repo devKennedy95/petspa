@@ -362,18 +362,18 @@ void main() {
       await tester.tap(find.text('Complete Profile'));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 1. Verify POST /api/groomer-auth/setup-account was called
-      expect(mockApi.calledPaths, contains('/api/groomer-auth/setup-account'));
-      final setupPayload = mockApi.lastPayloadByPath['/api/groomer-auth/setup-account'] as Map<String, dynamic>;
+      // 1. Verify POST /api/auth/groomer/setup-account was called
+      expect(mockApi.calledPaths, contains('/api/auth/groomer/setup-account'));
+      final setupPayload = mockApi.lastPayloadByPath['/api/auth/groomer/setup-account'] as Map<String, dynamic>;
       expect(setupPayload['tempLoginId'], equals('testg981791882876498@temp.shearheaven.com'));
       expect(setupPayload['tempPassword'], equals('Temp@Password123'));
       expect(setupPayload['email'], equals('ashna.menon@shearheaven.com'));
       expect(setupPayload['password'], equals('Permanent@123'));
       expect(setupPayload['confirmPassword'], equals('Permanent@123'));
 
-      // 2. Verify PUT /api/groomer-auth/profile was called with correct first/last names
-      expect(mockApi.calledPaths, contains('/api/groomer-auth/profile'));
-      final profilePayload = mockApi.lastPayloadByPath['/api/groomer-auth/profile'] as Map<String, dynamic>;
+      // 2. Verify PUT /api/common/groomer/profile was called with correct first/last names
+      expect(mockApi.calledPaths, contains('/api/common/groomer/profile'));
+      final profilePayload = mockApi.lastPayloadByPath['/api/common/groomer/profile'] as Map<String, dynamic>;
       expect(profilePayload['firstName'], equals('Ashna'));
       expect(profilePayload['lastName'], equals('Menon'));
       expect(profilePayload['mobile'], equals('5551234567'));
@@ -407,8 +407,8 @@ void main() {
       );
 
       expect(updated, isNotNull);
-      expect(mockApi.calledPaths, contains('/api/groomer-auth/profile'));
-      final profilePayload = mockApi.lastPayloadByPath['/api/groomer-auth/profile'] as Map<String, dynamic>;
+      expect(mockApi.calledPaths, contains('/api/common/groomer/profile'));
+      final profilePayload = mockApi.lastPayloadByPath['/api/common/groomer/profile'] as Map<String, dynamic>;
       expect(profilePayload['firstName'], equals('Ashna'));
       expect(profilePayload['lastName'], equals('Ashna'));
     });

@@ -93,7 +93,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       expect(bloc.state.status, equals(GroomerRegisterStatus.success));
-      expect(mockApi.lastPostPath, equals('/api/groomer-auth/setup-account'));
+      expect(mockApi.lastPostPath, equals('/api/auth/groomer/setup-account'));
 
       // Verify the exact 5 outgoing fields
       final outgoingPayload = mockApi.lastPostData as Map<String, dynamic>;
@@ -107,7 +107,7 @@ void main() {
   });
 
   group('GroomerRegisterRepository Tests', () {
-    test('setupAccount sends POST /api/groomer-auth/setup-account with exact 5 payload fields', () async {
+    test('setupAccount sends POST /api/auth/groomer/setup-account with exact 5 payload fields', () async {
       mockApi.mockPostResponse = {
         'success': true,
         'message': 'Account setup successful',
@@ -135,7 +135,7 @@ void main() {
       );
 
       expect(response, isNotNull);
-      expect(mockApi.lastPostPath, equals('/api/groomer-auth/setup-account'));
+      expect(mockApi.lastPostPath, equals('/api/auth/groomer/setup-account'));
 
       final outgoingPayload = mockApi.lastPostData as Map<String, dynamic>;
       expect(outgoingPayload.keys.toSet(), equals({

@@ -191,9 +191,10 @@ void main() {
         password: 'Groomer@123',
       );
 
-      expect(mockApi.lastPostPath, '/api/groomer-auth/login');
+      expect(mockApi.lastPostPath, '/api/auth/login');
       expect(mockApi.lastPostData?['email'], 'g001@shearheaven.com');
       expect(mockApi.lastPostData?['password'], 'Groomer@123');
+      expect(mockApi.lastPostData?['role'], 'groomer');
       expect(result, isNotNull);
       expect(result!.mustChangePassword, isFalse);
       expect(result.groomer.firstName, 'Merisa');
@@ -206,7 +207,7 @@ void main() {
       expect(storedGroomer.slotBookingLimit, 3);
     });
 
-    test('setupAccount sends POST /api/groomer-auth/setup-account with full credentials', () async {
+    test('setupAccount sends POST /api/auth/groomer/setup-account with full credentials', () async {
       mockApi.mockPostResponse = {
         'success': true,
         'message': 'Account setup completed successfully',
@@ -233,7 +234,7 @@ void main() {
         confirmPassword: 'NewPassword@123',
       );
 
-      expect(mockApi.lastPostPath, '/api/groomer-auth/setup-account');
+      expect(mockApi.lastPostPath, '/api/auth/groomer/setup-account');
       expect(mockApi.lastPostData?['tempLoginId'], 'g00112345@temp.com');
       expect(mockApi.lastPostData?['password'], 'NewPassword@123');
       expect(result, isNotNull);
@@ -257,7 +258,7 @@ void main() {
 
       final profile = await groomerRepo.getProfile();
 
-      expect(mockApi.lastGetPath, '/api/groomer-auth/profile');
+      expect(mockApi.lastGetPath, '/api/common/groomer/profile');
       expect(profile, isNotNull);
       expect(profile!.firstName, 'Merisa');
       expect(profile.multiBookingEnabled, isTrue);
@@ -280,7 +281,7 @@ void main() {
 
       final ok = await groomerRepo.refreshToken();
 
-      expect(mockApi.lastPostPath, '/api/groomer-auth/refresh-token');
+      expect(mockApi.lastPostPath, '/api/auth/refresh-token');
       expect(mockApi.lastPostData?['refreshToken'], 'valid-refresh-tok');
       expect(ok, isTrue);
 
@@ -386,7 +387,7 @@ void main() {
       };
 
       final bookings = await groomerRepo.getUpcomingBookings();
-      expect(mockApi.lastGetPath, '/api/groomer-auth/bookings/upcoming');
+      expect(mockApi.lastGetPath, '/api/common/groomer/bookings/upcoming');
       expect(bookings.length, 1);
       expect(bookings.first.bookingId, 25);
       expect(bookings.first.petName, 'Simba');
@@ -445,7 +446,7 @@ void main() {
         endTime: '11:00',
       );
 
-      expect(mockApi.lastPostPath, '/api/groomer-auth/bookings/create-for-user');
+      expect(mockApi.lastPostPath, '/api/common/groomer/bookings');
       expect(res?['bookingId'], 99);
       expect(mockApi.lastPostData['userId'], 1);
       expect(mockApi.lastPostData['serviceId'], 12);

@@ -203,6 +203,41 @@ void main() {
         contains('Preferred Groomer'),
       );
     });
+
+    test('Any logged-in groomer CAN claim a fully unassigned booking', () async {
+      final session = ServicesLocator.sessionService;
+      await session.saveGroomerUser({
+        'id': 3,
+        'groomerId': 3,
+        'groomerCode': 'G003',
+        'fullName': 'Tracie Jamison',
+        'role': 'groomer',
+      });
+
+      const unassignedBooking = GroomerBooking(
+        bookingId: 88,
+        status: 'confirmed',
+        bookingDate: '2026-11-05',
+        startTime: '02:00 PM',
+        endTime: '03:00 PM',
+        petName: 'Daisy',
+        customerName: 'Robert',
+        serviceName: 'Bath',
+        groomerId: null,
+        serviceProgress: [
+          ServiceProgressItem(
+            taskKey: 'svc-88-bath',
+            taskName: 'Bath',
+            assignedGroomerId: null,
+          ),
+        ],
+      );
+
+      expect(unassignedBooking.hasAnyAssignedGroomer, isFalse);
+      expect(session.isAdmin, isFalse);
+      expect(session.canReassignBooking(unassignedBooking), isTrue);
+      expect(session.getReassignDisabledReason(unassignedBooking), isNull);
+    });
   });
 
   group('Groomer Availability Check & Overlap Prevention Tests', () {

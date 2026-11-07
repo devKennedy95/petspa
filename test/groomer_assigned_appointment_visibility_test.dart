@@ -1,10 +1,24 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shear_heaven_pet_spa/src/common/repos/api_repository.dart';
 import 'package:shear_heaven_pet_spa/src/common/services/services_locator.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/models/groomer_booking.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/models/salon_groomer.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/repo/groomer_home_repository.dart';
+
+class _MockVisibilityApiRepository extends ApiRepository {
+  @override
+  Future<Map<String, dynamic>?> putData(String path, Map<String, dynamic> data) async {
+    return {'success': true, 'data': {}};
+  }
+
+  @override
+  Future<Map<String, dynamic>?> get(String path, {Map<String, dynamic>? query}) async {
+    return {'success': true, 'data': []};
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +32,8 @@ void main() {
   setUp(() async {
     GroomerHomeRepository.clearLocalCreatedBookings();
     GroomerHomeRepository.resetBookingApprovalCache();
+    GetIt.I.allowReassignment = true;
+    GetIt.I.registerSingleton<ApiRepository>(_MockVisibilityApiRepository());
   });
 
   group('GroomerBooking.isAssignedToGroomer Unit Tests', () {

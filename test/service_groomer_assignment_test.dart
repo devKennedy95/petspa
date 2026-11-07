@@ -1,19 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shear_heaven_pet_spa/src/common/repos/api_repository.dart';
 import 'package:shear_heaven_pet_spa/src/common/services/services_locator.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/models/groomer_booking.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/models/salon_groomer.dart';
+import 'package:shear_heaven_pet_spa/src/groomer/home/repo/groomer_home_repository.dart';
 import 'package:shear_heaven_pet_spa/src/groomer/home/views/widgets/service_groomer_assignments_card.dart';
+
+class _MockAssignApiRepository extends ApiRepository {
+  Map<String, dynamic>? putDataResponse = {'success': true, 'data': {}};
+  final List<String> putDataPaths = [];
+
+  @override
+  Future<Map<String, dynamic>?> putData(String path, Map<String, dynamic> data) async {
+    putDataPaths.add(path);
+    return putDataResponse;
+  }
+
+  @override
+  Future<Map<String, dynamic>?> get(String path, {Map<String, dynamic>? query}) async {
+    return {'success': true, 'data': []};
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  late _MockAssignApiRepository mockApi;
 
   setUpAll(() async {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
     await ServicesLocator.initialize();
+  });
+
+  setUp(() {
+    mockApi = _MockAssignApiRepository();
+    GetIt.I.allowReassignment = true;
+    GetIt.I.registerSingleton<ApiRepository>(mockApi);
+    GroomerHomeRepository.clearLocalCreatedBookings();
+    GroomerHomeRepository.resetBookingApprovalCache();
   });
 
   group('ServiceProgressItem & GroomerBooking Serialization Tests', () {
@@ -207,10 +236,110 @@ void main() {
 
       expect(result.success, true);
       expect(result.updatedBooking, isNotNull);
+      expect(
+        mockApi.putDataPaths,
+        contains('/api/common/groomer/bookings/202/service-progress/assign-groomer'),
+      );
       final updatedTask = result.updatedBooking!.getServiceProgressForTask('svc-202-bath');
       expect(updatedTask?.assignedGroomerId, 104);
       expect(result.updatedBooking!.serviceAssignmentActivity.isNotEmpty, true);
       expect(result.updatedBooking!.serviceAssignmentActivity.first['taskKey'], 'svc-202-bath');
+    });
+
+    test('Non-admin groomer can claim a fully unassigned booking task', () async {
+      final session = ServicesLocator.sessionService;
+      final repo = ServicesLocator.groomerHomeRepository;
+
+      await session.saveGroomerUser({
+        'id': 104,
+        'userId': '104',
+        'groomerId': 104,
+        'name': 'liam L',
+        'fullName': 'liam L',
+        'role': 'groomer',
+      });
+
+      final unassignedBooking = GroomerBooking(
+        bookingId: 303,
+        status: 'confirmed',
+        bookingDate: '2026-11-03',
+        startTime: '02:00 PM',
+        endTime: '03:00 PM',
+        petName: 'Daisy',
+        customerName: 'Robert',
+        serviceName: 'Bath',
+        groomerId: null,
+        serviceProgress: const [
+          ServiceProgressItem(
+            taskKey: 'svc-303-bath',
+            taskName: 'Bath',
+            assignedGroomerId: null,
+          ),
+        ],
+      );
+
+      expect(unassignedBooking.hasAnyAssignedGroomer, isFalse);
+
+      final result = await repo.assignServiceGroomer(
+        bookingId: 303,
+        taskKey: 'svc-303-bath',
+        groomerId: 104,
+        currentBooking: unassignedBooking,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.updatedBooking?.groomerId, 104);
+      expect(
+        result.updatedBooking!.getServiceProgressForTask('svc-303-bath')?.assignedGroomerId,
+        104,
+      );
+    });
+
+    test('Assign fails when API returns failure even if currentBooking is present', () async {
+      final session = ServicesLocator.sessionService;
+      final repo = ServicesLocator.groomerHomeRepository;
+      mockApi.putDataResponse = {
+        'success': false,
+        'statusCode': 404,
+        'message': 'The page or API route was not found.',
+      };
+
+      await session.saveGroomerUser({
+        'id': 104,
+        'groomerId': 104,
+        'fullName': 'liam L',
+        'role': 'groomer',
+      });
+
+      final booking = GroomerBooking(
+        bookingId: 404,
+        status: 'confirmed',
+        bookingDate: '2026-12-15',
+        startTime: '08:00 AM',
+        endTime: '09:00 AM',
+        petName: 'Rocky',
+        customerName: 'John Doe',
+        serviceName: 'Bath',
+        groomerId: 104,
+        groomerName: 'liam L',
+        serviceProgress: const [
+          ServiceProgressItem(
+            taskKey: 'svc-404-bath',
+            taskName: 'Bath',
+          ),
+        ],
+      );
+
+      final result = await repo.assignServiceGroomer(
+        bookingId: 404,
+        taskKey: 'svc-404-bath',
+        groomerId: 104,
+        currentBooking: booking,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.message, contains('not found'));
+      expect(result.updatedBooking, isNull);
     });
   });
 
